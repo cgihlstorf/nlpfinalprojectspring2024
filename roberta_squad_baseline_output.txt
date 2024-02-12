@@ -1,0 +1,1 @@
+{'exact': 79.47443780005054, 'f1': 82.48008780904681, 'total': 11873, 'HasAns_exact': 76.80499325236167, 'HasAns_f1': 82.82491271201332, 'HasAns_total': 5928, 'NoAns_exact': 82.13624894869638, 'NoAns_f1': 82.13624894869638, 'NoAns_total': 5945, 'best_exact': 79.47443780005054, 'best_exact_thresh': 0.0, 'best_f1': 82.48008780904671, 'best_f1_thresh': 0.0}
