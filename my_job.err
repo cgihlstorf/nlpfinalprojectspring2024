@@ -1,0 +1,5 @@
+/u/czm5kz/.local/lib/python3.10/site-packages/datasets/load.py:2089: FutureWarning: 'use_auth_token' was deprecated in favor of 'token' in version 2.14.0 and will be removed in 3.0.0.
+You can remove this warning by passing 'token=True' instead.
+  warnings.warn(
+Got disconnected from remote data host. Retrying in 5sec [1/20]
+/var/spool/slurmd/job3844133/slurm_script: line 10: 810574 Killed                  python3 access_oscar.py
