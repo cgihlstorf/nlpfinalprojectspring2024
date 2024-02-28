@@ -1,4 +1,4 @@
-﻿Code,Language,# docs,# words,Content Length :,
+﻿,Code,Language,# docs,# words,Content Length :
 0,af,Afrikaans,23994,6217024,37.2 MB
 1,sq,Albanian,1342790,462694599,3.2 GB
 2,am,Amharic,119434,40262809,512.9 MB
@@ -33,7 +33,7 @@
 31,nl,Dutch,72552688,19564553306,135.0 GB
 32,mhr,Eastern Mari,9502,1615215,22.9 MB
 33,arz,Egyptian Arabic,3958,385511,3.7 MB
-34,en,English,1235510986,5.23869E+11,3.4 TB
+34,en,English,1235510986,5.24E+11,3.4 TB
 35,eo,Esperanto,226924,67774923,474.8 MB
 36,et,Estonian,3601904,938296892,8.0 GB
 37,tl,Filipino,250558,110560444,719.2 MB
