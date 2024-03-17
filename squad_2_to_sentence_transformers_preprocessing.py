@@ -73,7 +73,7 @@ def benchmark_roberta_base_on_squad_v2(new_squad_2_predict_data, new_squad_2_eva
 
     #model = QuestionAnsweringModel("sentence-transformers/stsb-roberta-base-v2")
     model = QuestionAnsweringModel("roberta",
-                               "sentence-transformers/stsb-roberta-base-v2",
+                               "roberta-base",
                                #args=train_args,
                                use_cuda=False)
 
