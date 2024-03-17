@@ -2,13 +2,17 @@
 # pip install evaluate --quiet
 
 from evaluate import load
-from transformers import RobertaTokenizer, RobertaForQuestionAnswering
+from transformers import RobertaTokenizer, RobertaForQuestionAnswering, RobertaModel
 from datasets import load_dataset
 import torch, re
 
-model_name = "deepset/roberta-base-squad2"
+# model_name = "deepset/roberta-base-squad2"
+model_name = "FacebookAI/roberta-base"
+
 tokenizer = RobertaTokenizer.from_pretrained(model_name)
-model = RobertaForQuestionAnswering.from_pretrained(model_name)
+
+# model = RobertaForQuestionAnswering.from_pretrained(model_name)
+model = RobertaModel.from_pretrained(model_name)
 
 squad_dev = load_dataset("squad_v2", split="validation")
 # squad_dev = load_dataset("squad_v2", split="train+validation") # UNCOMMENT THIS WHEN YOU KNOW RESULTS CAN PRINT
@@ -29,6 +33,7 @@ for i in range(squad_dev.num_rows):
 
   with torch.no_grad():
     output = model(**tokenized_example)
+    print(output)
 
   start_logits = output.start_logits
   end_logits = output.end_logits

@@ -12,7 +12,7 @@ Original file is located at
 #pip install transformers datasets evaluate accelerate peft 
 
 import torch
-from transformers import RobertaModel, RobertaTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding
+from transformers import RobertaModel, RobertaTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding, DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model
 from datasets import load_dataset, Dataset
 
@@ -32,24 +32,56 @@ dataset_0 = load_dataset("oscar-corpus/OSCAR-2201",
 
 #create a new dataset with fewer items than the original
 #code from https://huggingface.co/docs/datasets/create_dataset
-items_list = []
-counter = 0
+items_list_train = []
+items_list_test = []
+
+train_labels = []
+
+train_counter = 0
+num_train_examples = 16
+
+test_counter = 0
+num_test_examples = 5
+
 for item in dataset_0:
-  if counter == 10:
+  #print(train_counter, test_counter)
+  if train_counter < num_train_examples and test_counter == 0:
+    items_list_train.append(item['text'])
+    #print(item)
+    train_labels.append(item['meta']['identification']['label'])
+    train_counter += 1
+  
+  elif train_counter >= num_train_examples and test_counter < num_test_examples:
+    items_list_test.append(item['text'])
+    test_counter += 1
+
+  else:
+    print("Num train items:", train_counter)
+    print("Num test_items:", test_counter)
+    assert len(items_list_train) == num_train_examples
+    assert len(items_list_test) == num_test_examples
     break
-  items_list.append(item)
-  counter += 1
+  
 
 #all code in the next two cells from https://huggingface.co/docs/datasets/create_dataset
 
-def gen():
-  for item in items_list:
+def gen_train():
+  for item in items_list_train:
     yield item
 
-dataset = Dataset.from_generator(gen)
+def gen_test():
+  for item in items_list_test:
+    yield item
 
-print(dataset.features)
-print("VALS:", dataset.features['meta']['identification']['label'])
+dataset_train = Dataset.from_generator(gen_train)
+dataset_test = Dataset.from_generator(gen_test)
+
+# print("Features:", dataset.features)
+# print("=============================================")
+
+# for item in dataset:
+#   print(item)
+#   break
 
 tokenizer = RobertaTokenizer.from_pretrained(base_model)
 
@@ -57,7 +89,9 @@ def preprocess(examples):
     tokenized = tokenizer(examples['text'], truncation=True, padding=True)
     return tokenized
 
-train_dataset = dataset.map(preprocess, batched=True,  remove_columns=["text"])
+train_dataset = dataset_train.map(preprocess, batched=True,  remove_columns=["text"])
+test_dataset = dataset_test.map(preprocess, batched=True,  remove_columns=["text"])
+
 # train_dataset=tokenized_dataset['train']
 # eval_dataset=tokenized_dataset['test'].shard(num_shards=2, index=0)
 # test_dataset=tokenized_dataset['test'].shard(num_shards=2, index=1)
@@ -72,31 +106,35 @@ train_dataset = dataset.map(preprocess, batched=True,  remove_columns=["text"])
 # We will need this for our classifier.
 # id2label = {i: label for i, label in enumerate(class_names)}
 
-data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="pt")
+#data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="pt")
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
 
 """Training"""
 
 # use the same Training args for all models
 training_args = TrainingArguments(
-    output_dir='./results',
-    evaluation_strategy='steps',
+    output_dir='results',
+    evaluation_strategy='no',
     learning_rate=5e-5,
     num_train_epochs=1,
-    per_device_train_batch_size=16,
+    per_device_train_batch_size=16
 )
 
+print("got here 1")
+
+# def get_trainer(model):
+#       return  Trainer(
+#           model=model,
+#           args=training_args,
+#           train_dataset=train_dataset,
+#           #eval_dataset=eval_dataset,
+#           data_collator=data_collator,
+#       )
 
 
-def get_trainer(model):
-      return  Trainer(
-          model=model,
-          args=training_args,
-          train_dataset=train_dataset,
-          #eval_dataset=eval_dataset,
-          data_collator=data_collator,
-      )
-
-model = AutoModelForSequenceClassification.from_pretrained(base_model) #id2label=id2label)
+id2label = {1: "fr"}
+#model = AutoModelForSequenceClassification.from_pretrained(base_model) #id2label=id2label)
+model = RobertaModel.from_pretrained('roberta-base')
 
 peft_config = LoraConfig(task_type="SEQ_CLS", inference_mode=False, r=8, lora_alpha=16, lora_dropout=0.1)
 peft_model = get_peft_model(model, peft_config)
@@ -104,9 +142,40 @@ peft_model = get_peft_model(model, peft_config)
 print('PEFT Model')
 peft_model.print_trainable_parameters()
 
-peft_lora_finetuning_trainer = get_trainer(peft_model)
+print("got here 2")
+
+peft_lora_finetuning_trainer = Trainer(
+          model=peft_model,
+          args=training_args,
+          train_dataset=train_dataset,
+          #eval_dataset=test_dataset,
+          data_collator=data_collator,
+      )
+
+print("got here 3")
 
 peft_lora_finetuning_trainer.train()
 
+print("got here 4")
+
 peft_lora_finetuning_trainer.save_model("finetuned_roberta_general_french")
 #peft_lora_finetuning_trainer.evaluate()
+
+
+
+# {'id': Value(dtype='int64', id=None), 
+# 'text': Value(dtype='string', id=None), 
+# 'meta': {'annotations': Sequence(feature=Value(dtype='string', id=None), length=-1, id=None), 
+#          'identification': {'label': Value(dtype='string', id=None), 
+#          'prob': Value(dtype='float64', id=None)}, 
+#          'line_identifications': [{'label': Value(dtype='string', id=None), 
+#          'prob': Value(dtype='float64', id=None)}], 
+#          'warc_headers': {'content-length': Value(dtype='int64', id=None), 
+#                           'content-type': Value(dtype='string', id=None), 
+#                           'warc-block-digest': Value(dtype='string', id=None), 
+#                           'warc-date': Value(dtype='string', id=None), 
+#                           'warc-identified-content-language': Value(dtype='string', id=None), 
+#                           'warc-record-id': Value(dtype='string', id=None), 
+#                           'warc-refers-to': Value(dtype='string', id=None), 
+#                           'warc-target-uri': Value(dtype='string', id=None), 
+#                           'warc-type': Value(dtype='string', id=None)}}}
